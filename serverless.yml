@@ -5,7 +5,7 @@ plugins:
 app: serverless-basic
 service: serverless-basic
 useDotenv: true
-frameworkVersion: '3'
+frameworkVersion: "3"
 
 provider:
   name: aws
@@ -24,9 +24,11 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: 'arn:aws:dynamodb:${env:REGION}:*:*'
+      Resource: "arn:aws:dynamodb:${env:REGION}:*:*"
   environment:
     IS_OFFLINE: ${env:IS_OFFLINE}
+    TABLE_NAME_AUTH: ${env:TABLE_NAME_AUTH}
+    JWT_SECRET: ${env:JWT_SECRET}
 
 custom:
   serverless-offline:
@@ -49,27 +51,36 @@ custom:
         sources:
           - table: usersTable
             rawsources: [./dynamodb-tables/usersTable-data.json]
+          - table: authTable
+            sources: [./dynamodb-tables/authTable-data.json]
   tableNames:
-    usersTable: 'usersTable'
+    usersTable: "usersTable"
+    authTable: "authTable"
 
 functions:
   hello-world:
     handler: src/handlers/hello/hello.handler
-    description: 'offline example'
+    description: "offline example"
     events:
       - httpApi:
           path: /${self:provider.stage}/hello
           method: GET
   createUser:
     handler: src/handlers/users/createUser.handler
-    description: 'Create a single user'
+    description: "Create a single user"
     events:
       - httpApi:
           path: /${self:provider.stage}/user
           method: POST
     environment:
       TABLE_NAME_USERS: ${env:TABLE_NAME_USERS}
-
+  login:
+    handler: src/handlers/auth/login.handler
+    description: "User login"
+    events:
+      - httpApi:
+          path: /${self:provider.stage}/login
+          method: POST
 
 resources:
   Resources:
@@ -115,3 +126,16 @@ resources:
             ProvisionedThroughput:
               ReadCapacityUnits: 3
               WriteCapacityUnits: 3
+    authTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: authTable
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        ProvisionedThroughput:
+          ReadCapacityUnits: 3
+          WriteCapacityUnits: 3
