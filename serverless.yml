@@ -29,6 +29,15 @@ provider:
     IS_OFFLINE: ${env:IS_OFFLINE}
     TABLE_NAME_AUTH: ${env:TABLE_NAME_AUTH}
     JWT_SECRET: ${env:JWT_SECRET}
+  httpApi:
+    authorizers:
+      jwtAuthorizer:
+        type: request
+        functionName: jwtAuthorizer
+        identitySource:
+          - $request.header.Authorization
+        payloadVersion: "2.0"
+        enableSimpleResponses: true
 
 custom:
   serverless-offline:
@@ -81,6 +90,17 @@ functions:
       - httpApi:
           path: /${self:provider.stage}/login
           method: POST
+  profile:
+    handler: src/handlers/auth/profile.handler
+    description: "Protected profile endpoint"
+    events:
+      - httpApi:
+          path: /${self:provider.stage}/profile
+          method: GET
+          authorizer:
+            name: jwtAuthorizer
+  jwtAuthorizer:
+    handler: src/handlers/auth/authorizer.handler
 
 resources:
   Resources:
